@@ -35,8 +35,6 @@
       font-size:16px;
     }
     #btnSolicitar{
-      display:none;
-      margin-top:16px;
       padding:12px 20px;
       font-size:16px;
       border-radius:8px;
@@ -62,10 +60,9 @@
     <div class="card">
       <h2>Calculador de precio por km</h2>
       
-      <!-- Valores fijos siempre visibles -->
       <div class="precios-fijos">
-        <div>Precio de bajada: $1000.00</div>
-        <div>Precio por km: $500.00</div>
+        <div>Precio de bajada: $500.00</div>
+        <div>Precio por km: $300.00</div>
       </div>
 
       <div class="row controls">
@@ -80,8 +77,8 @@
         <div id="resultado-box">Ingresá origen y destino y presioná «Calcular».</div>
       </div>
 
-      <!-- Formulario POST oculto que se muestra solo después de calcular -->
-      <form id="formSolicitar" method="POST" action="https://script.google.com/macros/s/AKfycbxGyZy-HQsZlcLMOObE2LXTI_VofqxXzL0dDFgb7l2BB2GkLHbExHaMCvgw6WJHeTKW/exec" target="_blank" style="display:none;">
+      <!-- Formulario POST oculto -->
+      <form id="formSolicitar" method="POST" action="https://script.google.com/macros/s/AKfycbxGyZy-HQsZlcLMOObE2LXTI_VofqxXzL0dDFgb7l2BB2GkLHbExHaMCvgw6WJHeTKW/exec" target="_blank" style="display:none; flex-direction:column; align-items:center;">
         <input type="hidden" name="origen" id="form-origen">
         <input type="hidden" name="destino" id="form-destino">
         <input type="hidden" name="distancia" id="form-distancia">
@@ -99,8 +96,8 @@
   <script>
     let map, directionsService, directionsRenderer, autocompleteOrigen, autocompleteDestino;
 
-    const TARIFA_KM = 500;
-    const PRECIO_BAJADA = 1000;
+    const TARIFA_KM = 300;
+    const PRECIO_BAJADA = 500;
 
     function initMap() {
       const centro = { lat: -38.9516, lng: -68.0596 };
@@ -143,7 +140,6 @@
         const distanciaKm = element.distance.value / 1000;
         const precioTotal = PRECIO_BAJADA + (distanciaKm * TARIFA_KM);
 
-        // Mostrar resultado
         document.getElementById("resultado-box").innerHTML = `
           <div><strong>Distancia:</strong> ${element.distance.text} (${distanciaKm.toFixed(2)} km)</div>
           <div style="font-size:1.1em;font-weight:700;text-align:right;">Precio total: $${precioTotal.toFixed(2)}</div>
@@ -155,9 +151,11 @@
         document.getElementById("form-distancia").value = distanciaKm.toFixed(2);
         document.getElementById("form-precioTotal").value = precioTotal.toFixed(2);
 
-        // Mostrar botón Solicitar
-        document.getElementById("formSolicitar").style.display = "block";
-        document.getElementById("btnSolicitar").scrollIntoView({behavior:"smooth"});
+        // Mostrar botón Solicitar correctamente centrado
+        const form = document.getElementById("formSolicitar");
+        form.style.display = "flex";
+        form.style.flexDirection = "column";
+        form.style.alignItems = "center";
 
         // Mostrar ruta en mapa
         directionsService.route({
