@@ -78,7 +78,7 @@
       </div>
 
       <!-- Formulario POST oculto -->
-      <form id="formSolicitar" method="POST" action="https://script.google.com/macros/s/AKfycbxGyZy-HQsZlcLMOObE2LXTI_VofqxXzL0dDFgb7l2BB2GkLHbExHaMCvgw6WJHeTKW/exec" target="_blank" style="display:none; flex-direction:column; align-items:center;">
+      <form id="formSolicitar" method="POST" action="https://script.google.com/macros/s/AKfycbz_snZoeH9nCfjPMmUMVSrr5W5lFxsL7BseR7hiXMmn--3MNQSThK-MKZmq52KtsMAl5g/exec" target="_blank" style="display:none; flex-direction:column; align-items:center;">
         <input type="hidden" name="origen" id="form-origen">
         <input type="hidden" name="destino" id="form-destino">
         <input type="hidden" name="distancia" id="form-distancia">
@@ -151,7 +151,7 @@
         document.getElementById("form-distancia").value = distanciaKm.toFixed(2);
         document.getElementById("form-precioTotal").value = precioTotal.toFixed(2);
 
-        // Mostrar botón Solicitar correctamente centrado
+        // Mostrar botón Solicitar
         const form = document.getElementById("formSolicitar");
         form.style.display = "flex";
         form.style.flexDirection = "column";
@@ -175,3 +175,4 @@
   </script>
 </body>
 </html>
+
