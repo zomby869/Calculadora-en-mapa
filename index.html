@@ -9,7 +9,7 @@
     .wrap{max-width:900px;margin:18px auto;padding:18px}
     .card{background:#fff;border-radius:12px;padding:16px;box-shadow:0 6px 18px rgba(0,0,0,0.08)}
     .row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px}
-    input[type="text"],input[type="number"],button{
+    input[type="text"],button{
       padding:10px;border-radius:8px;border:1px solid #d0d0d0;font-size:15px;flex:1;min-width:180px;
     }
     button{cursor:pointer;background:#0b74de;color:#fff;border:none}
@@ -30,7 +30,6 @@
         <input id="destino" type="text" placeholder="Destino" />
       </div>
       <div class="row">
-        <input id="tarifa" type="number" min="0" step="0.01" placeholder="Tarifa por km (ej. 300)" value="300" />
         <button id="btnCalcular">Calcular</button>
       </div>
 
@@ -42,42 +41,40 @@
     </div>
   </div>
 
-  <!-- Nota: reemplazá TU_API_KEY por tu clave real de Google Cloud -->
   <script>
     // ---------------------------------------------------------
-    //  VARIABLES Y FUNCIONES PRINCIPALES
+    // VARIABLES Y CONFIGURACIÓN FIJA
     // ---------------------------------------------------------
     let map, directionsService, directionsRenderer, autocompleteOrigen, autocompleteDestino;
 
-    function initMap() {
-      // Centro por defecto (puedes cambiar lat/lng)
-      const centro = { lat: -38.9516, lng: -68.0596 }; // Neuquén aprox.
-      map = new google.maps.Map(document.getElementById("map"), {
-        center: centro,
-        zoom: 12,
-        mapTypeControl: false,
-      });
+    // Valores que solo vos podes cambiar
+    const TARIFA_KM = 300;       // Precio por km
+    const PRECIO_BAJADA = 500;   // Precio de bajada inicial
 
+    // ---------------------------------------------------------
+    // INICIALIZACIÓN DEL MAPA
+    // ---------------------------------------------------------
+    function initMap() {
+      const centro = { lat: -38.9516, lng: -68.0596 }; // Neuquén aprox.
+      map = new google.maps.Map(document.getElementById("map"), { center: centro, zoom: 12, mapTypeControl: false });
       directionsService = new google.maps.DirectionsService();
       directionsRenderer = new google.maps.DirectionsRenderer({ map: map, suppressMarkers: false });
 
-      // Autocomplete para evitar errores de dirección
       autocompleteOrigen = new google.maps.places.Autocomplete(document.getElementById("origen"), { fields: ["formatted_address", "geometry", "name"] });
       autocompleteDestino = new google.maps.places.Autocomplete(document.getElementById("destino"), { fields: ["formatted_address", "geometry", "name"] });
 
-      // Botón
       document.getElementById("btnCalcular").addEventListener("click", calcular);
     }
 
+    // ---------------------------------------------------------
+    // FUNCIÓN DE CÁLCULO
+    // ---------------------------------------------------------
     function calcular() {
       const origen = document.getElementById("origen").value.trim();
       const destino = document.getElementById("destino").value.trim();
-      const tarifa = parseFloat(document.getElementById("tarifa").value);
 
       if (!origen || !destino) { alert("Ingresá origen y destino."); return; }
-      if (isNaN(tarifa)) { alert("Ingresá una tarifa por km válida."); return; }
 
-      // 1) Usamos DistanceMatrix para obtener distancia (métrica)
       const dms = new google.maps.DistanceMatrixService();
       dms.getDistanceMatrix({
         origins: [origen],
@@ -98,17 +95,34 @@
           return;
         }
 
-        const distanciaMetros = element.distance.value;
-        const distanciaKm = distanciaMetros / 1000;
-        const precio = distanciaKm * tarifa;
+        const distanciaKm = element.distance.value / 1000;
+        const precioKm = distanciaKm * TARIFA_KM;
+        const precioTotal = PRECIO_BAJADA + precioKm;
 
-        // mostramos resultado
-        document.getElementById("resultado").innerHTML =
-          `Distancia: ${element.distance.text} (${distanciaKm.toFixed(2)} km)<br>` +
-          `Tiempo estimado: ${element.duration.text}<br>` +
-          `Precio: $${precio.toFixed(2)}`;
+        // Resultado en tarjeta visual
+        document.getElementById("resultado").innerHTML = `
+          <div style="
+            background:#f0f8ff;
+            border-radius:10px;
+            padding:12px;
+            box-shadow:0 4px 12px rgba(0,0,0,0.1);
+            display:flex;
+            flex-direction:column;
+            gap:6px;
+          ">
+            <div><strong>Distancia:</strong> ${element.distance.text} (${distanciaKm.toFixed(2)} km)</div>
+            <div style="display:flex;justify-content:space-between;">
+              <span><strong>Precio de bajada:</strong></span> <span>$${PRECIO_BAJADA.toFixed(2)}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;">
+              <span><strong>Precio por km:</strong></span> <span>$${precioKm.toFixed(2)}</span>
+            </div>
+            <hr style="border:none;border-top:1px solid #ccc;">
+            <div style="font-size:1.1em;font-weight:700;text-align:right;">Precio total: $${precioTotal.toFixed(2)}</div>
+          </div>
+        `;
 
-        // 2) Pedimos y mostramos la ruta en el mapa (opcional)
+        // Mostramos la ruta en el mapa
         directionsService.route({
           origin: origen,
           destination: destino,
@@ -118,23 +132,15 @@
             directionsRenderer.setDirections(routeResult);
           } else {
             console.warn("DirectionsService:", routeStatus);
-            // no abortamos si falla la visualización de la ruta
           }
         });
       });
     }
-
-    // ---------------------------------------------------------
-    //  FIN DEL SCRIPT
-    // ---------------------------------------------------------
   </script>
 
-  <!-- CARGA DE LA API: reemplazá TU_API_KEY y asegurate de habilitar APIs en Google Cloud -->
+  <!-- CARGA DE LA API: reemplazá TU_API_KEY por tu clave real de Google Cloud -->
   <script async defer
-  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD4BTT3rUnL-gGpHZj05kkcZYmTnzY7BRo&libraries=places&callback=initMap">
-</script>
-
+    src="https://maps.googleapis.com/maps/api/js?key=TU_API_KEY&libraries=places&callback=initMap">
+  </script>
 </body>
 </html>
-
-
