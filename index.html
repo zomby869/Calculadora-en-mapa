@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Calculador de precio por km</title>
+  <style>
+    body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#f4f4f4;color:#222}
+    .wrap{max-width:900px;margin:18px auto;padding:18px}
+    .card{background:#fff;border-radius:12px;padding:16px;box-shadow:0 6px 18px rgba(0,0,0,0.08)}
+    .row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px}
+    input[type="text"],input[type="number"],button{
+      padding:10px;border-radius:8px;border:1px solid #d0d0d0;font-size:15px;flex:1;min-width:180px;
+    }
+    button{cursor:pointer;background:#0b74de;color:#fff;border:none}
+    #map{height:380px;border-radius:10px;margin-top:12px}
+    #resultado{margin-top:12px;font-weight:600}
+    @media(min-width:900px){
+      .controls{display:flex;gap:12px}
+      #map{height:480px}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h2>Calculador de precio por km</h2>
+      <div class="row controls">
+        <input id="origen" type="text" placeholder="Origen (ej. Calle y Número o barrio)" />
+        <input id="destino" type="text" placeholder="Destino" />
+      </div>
+      <div class="row">
+        <input id="tarifa" type="number" min="0" step="0.01" placeholder="Tarifa por km (ej. 300)" value="300" />
+        <button id="btnCalcular">Calcular</button>
+      </div>
+
+      <div id="resultado">Ingresá origen y destino y presioná «Calcular».</div>
+      <div id="map"></div>
+      <small style="display:block;margin-top:8px;color:#666">
+        Consejo: usá las sugerencias automáticas al escribir (autocomplete). Si no ves sugerencias o aparece error, mirá la consola del navegador (F12).
+      </small>
+    </div>
+  </div>
+
+  <!-- Nota: reemplazá TU_API_KEY por tu clave real de Google Cloud -->
+  <script>
+    // ---------------------------------------------------------
+    //  VARIABLES Y FUNCIONES PRINCIPALES
+    // ---------------------------------------------------------
+    let map, directionsService, directionsRenderer, autocompleteOrigen, autocompleteDestino;
+
+    function initMap() {
+      // Centro por defecto (puedes cambiar lat/lng)
+      const centro = { lat: -38.9516, lng: -68.0596 }; // Neuquén aprox.
+      map = new google.maps.Map(document.getElementById("map"), {
+        center: centro,
+        zoom: 12,
+        mapTypeControl: false,
+      });
+
+      directionsService = new google.maps.DirectionsService();
+      directionsRenderer = new google.maps.DirectionsRenderer({ map: map, suppressMarkers: false });
+
+      // Autocomplete para evitar errores de dirección
+      autocompleteOrigen = new google.maps.places.Autocomplete(document.getElementById("origen"), { fields: ["formatted_address", "geometry", "name"] });
+      autocompleteDestino = new google.maps.places.Autocomplete(document.getElementById("destino"), { fields: ["formatted_address", "geometry", "name"] });
+
+      // Botón
+      document.getElementById("btnCalcular").addEventListener("click", calcular);
+    }
+
+    function calcular() {
+      const origen = document.getElementById("origen").value.trim();
+      const destino = document.getElementById("destino").value.trim();
+      const tarifa = parseFloat(document.getElementById("tarifa").value);
+
+      if (!origen || !destino) { alert("Ingresá origen y destino."); return; }
+      if (isNaN(tarifa)) { alert("Ingresá una tarifa por km válida."); return; }
+
+      // 1) Usamos DistanceMatrix para obtener distancia (métrica)
+      const dms = new google.maps.DistanceMatrixService();
+      dms.getDistanceMatrix({
+        origins: [origen],
+        destinations: [destino],
+        travelMode: 'DRIVING',
+        unitSystem: google.maps.UnitSystem.METRIC,
+        avoidTolls: false
+      }, (response, status) => {
+        if (status !== 'OK') {
+          console.error("DistanceMatrix error:", status, response);
+          alert("Error al calcular la distancia: " + status);
+          return;
+        }
+
+        const element = response.rows[0].elements[0];
+        if (element.status !== "OK") {
+          alert("No se pudo calcular la distancia: " + element.status);
+          return;
+        }
+
+        const distanciaMetros = element.distance.value;
+        const distanciaKm = distanciaMetros / 1000;
+        const precio = distanciaKm * tarifa;
+
+        // mostramos resultado
+        document.getElementById("resultado").innerHTML =
+          `Distancia: ${element.distance.text} (${distanciaKm.toFixed(2)} km)<br>` +
+          `Tiempo estimado: ${element.duration.text}<br>` +
+          `Precio: $${precio.toFixed(2)}`;
+
+        // 2) Pedimos y mostramos la ruta en el mapa (opcional)
+        directionsService.route({
+          origin: origen,
+          destination: destino,
+          travelMode: google.maps.TravelMode.DRIVING
+        }, (routeResult, routeStatus) => {
+          if (routeStatus === 'OK') {
+            directionsRenderer.setDirections(routeResult);
+          } else {
+            console.warn("DirectionsService:", routeStatus);
+            // no abortamos si falla la visualización de la ruta
+          }
+        });
+      });
+    }
+
+    // ---------------------------------------------------------
+    //  FIN DEL SCRIPT
+    // ---------------------------------------------------------
+  </script>
+
+  <!-- CARGA DE LA API: reemplazá TU_API_KEY y asegurate de habilitar APIs en Google Cloud -->
+  <script async defer
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDmbcRf_chv1PLS3hXVZsPMcZtFXh28Pks&libraries=places&callback=initMap">
+  </script>
+</body>
+</html>
