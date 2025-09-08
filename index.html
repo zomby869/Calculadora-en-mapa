@@ -15,6 +15,15 @@
     button{cursor:pointer;background:#0b74de;color:#fff;border:none}
     #map{height:380px;border-radius:10px;margin-top:12px}
     #resultado{margin-top:12px;font-weight:600}
+    .precios-fijos{
+      margin-bottom:12px;
+      background:#e8f0fe;
+      padding:10px 12px;
+      border-radius:8px;
+      font-weight:600;
+      display:flex;
+      gap:20px;
+    }
     @media(min-width:900px){
       .controls{display:flex;gap:12px}
       #map{height:480px}
@@ -25,6 +34,13 @@
   <div class="wrap">
     <div class="card">
       <h2>Calculador de precio por km</h2>
+      
+      <!-- Valores fijos siempre visibles -->
+      <div class="precios-fijos">
+        <div>Precio de bajada: $500.00</div>
+        <div>Precio por km: $300.00</div>
+      </div>
+
       <div class="row controls">
         <input id="origen" type="text" placeholder="Origen (ej. Calle y Número o barrio)" />
         <input id="destino" type="text" placeholder="Destino" />
@@ -47,15 +63,11 @@
     // ---------------------------------------------------------
     let map, directionsService, directionsRenderer, autocompleteOrigen, autocompleteDestino;
 
-    // Valores que solo vos podes cambiar
-    const TARIFA_KM = 500;       // Precio por km
-    const PRECIO_BAJADA = 1000;   // Precio de bajada inicial
+    const TARIFA_KM = 300;       // Precio por km
+    const PRECIO_BAJADA = 500;   // Precio de bajada inicial
 
-    // ---------------------------------------------------------
-    // INICIALIZACIÓN DEL MAPA
-    // ---------------------------------------------------------
     function initMap() {
-      const centro = { lat: -38.9516, lng: -68.0596 }; // Neuquén aprox.
+      const centro = { lat: -38.9516, lng: -68.0596 };
       map = new google.maps.Map(document.getElementById("map"), { center: centro, zoom: 12, mapTypeControl: false });
       directionsService = new google.maps.DirectionsService();
       directionsRenderer = new google.maps.DirectionsRenderer({ map: map, suppressMarkers: false });
@@ -66,9 +78,6 @@
       document.getElementById("btnCalcular").addEventListener("click", calcular);
     }
 
-    // ---------------------------------------------------------
-    // FUNCIÓN DE CÁLCULO
-    // ---------------------------------------------------------
     function calcular() {
       const origen = document.getElementById("origen").value.trim();
       const destino = document.getElementById("destino").value.trim();
@@ -96,10 +105,9 @@
         }
 
         const distanciaKm = element.distance.value / 1000;
-        const precioKm = distanciaKm * TARIFA_KM;
-        const precioTotal = PRECIO_BAJADA + precioKm;
+        const precioTotal = PRECIO_BAJADA + (distanciaKm * TARIFA_KM);
 
-        // Resultado en tarjeta visual
+        // Resultado solo con distancia y precio total
         document.getElementById("resultado").innerHTML = `
           <div style="
             background:#f0f8ff;
@@ -108,21 +116,13 @@
             box-shadow:0 4px 12px rgba(0,0,0,0.1);
             display:flex;
             flex-direction:column;
-            gap:6px;
+            gap:8px;
           ">
             <div><strong>Distancia:</strong> ${element.distance.text} (${distanciaKm.toFixed(2)} km)</div>
-            <div style="display:flex;justify-content:space-between;">
-              <span><strong>Precio de bajada:</strong></span> <span>$${PRECIO_BAJADA.toFixed(2)}</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;">
-              <span><strong>Precio por km:</strong></span> <span>$${precioKm.toFixed(2)}</span>
-            </div>
-            <hr style="border:none;border-top:1px solid #ccc;">
             <div style="font-size:1.1em;font-weight:700;text-align:right;">Precio total: $${precioTotal.toFixed(2)}</div>
           </div>
         `;
 
-        // Mostramos la ruta en el mapa
         directionsService.route({
           origin: origen,
           destination: destino,
@@ -138,11 +138,8 @@
     }
   </script>
 
-  <!-- CARGA DE LA API: reemplazá TU_API_KEY por tu clave real de Google Cloud -->
   <script async defer
     src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD4BTT3rUnL-gGpHZj05kkcZYmTnzY7BRo&libraries=places&callback=initMap">
   </script>
 </body>
 </html>
-
-
