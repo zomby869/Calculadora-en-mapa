@@ -7,22 +7,49 @@
   <style>
     body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#f4f4f4;color:#222}
     .wrap{max-width:900px;margin:18px auto;padding:18px}
-    .card{background:#fff;border-radius:12px;padding:16px;box-shadow:0 6px 18px rgba(0,0,0,0.08)}
-    .row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:8px}
+    .card{background:#fff;border-radius:12px;padding:24px;box-shadow:0 8px 20px rgba(0,0,0,0.08)}
+    h2{margin-bottom:16px;text-align:center;color:#0b74de}
+    .row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px}
     input[type="text"],button{
-      padding:10px;border-radius:8px;border:1px solid #d0d0d0;font-size:15px;flex:1;min-width:180px;
+      padding:12px;border-radius:8px;border:1px solid #d0d0d0;font-size:16px;flex:1;min-width:180px;
     }
-    button{cursor:pointer;background:#0b74de;color:#fff;border:none}
+    button{
+      cursor:pointer;
+      background:#0b74de;
+      color:#fff;
+      border:none;
+      transition: background 0.3s, transform 0.2s;
+    }
+    button:hover{background:#095bb5; transform: translateY(-2px);}
     #map{height:380px;border-radius:10px;margin-top:12px}
-    #resultado{margin-top:12px;font-weight:600}
+    #resultado{margin-top:16px;font-weight:600}
     .precios-fijos{
-      margin-bottom:12px;
+      margin-bottom:16px;
       background:#e8f0fe;
-      padding:10px 12px;
-      border-radius:8px;
+      padding:12px 16px;
+      border-radius:10px;
       font-weight:600;
       display:flex;
-      gap:20px;
+      gap:30px;
+      justify-content:center;
+      font-size:16px;
+    }
+    #btnSolicitar{
+      display:none;
+      margin-top:16px;
+      padding:12px 20px;
+      font-size:16px;
+      border-radius:8px;
+    }
+    #resultado-box{
+      background:#f0f8ff;
+      border-radius:12px;
+      padding:16px;
+      box-shadow:0 4px 12px rgba(0,0,0,0.1);
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      font-size:16px;
     }
     @media(min-width:900px){
       .controls{display:flex;gap:12px}
@@ -49,22 +76,23 @@
         <button id="btnCalcular">Calcular</button>
       </div>
 
-      <div id="resultado">Ingresá origen y destino y presioná «Calcular».</div>
+      <div id="resultado">
+        <div id="resultado-box">Ingresá origen y destino y presioná «Calcular».</div>
+      </div>
+      <button id="btnSolicitar">Solicitar</button>
       <div id="map"></div>
-      <small style="display:block;margin-top:8px;color:#666">
+      <small style="display:block;margin-top:12px;color:#666;text-align:center">
         Consejo: usá las sugerencias automáticas al escribir (autocomplete). Si no ves sugerencias o aparece error, mirá la consola del navegador (F12).
       </small>
     </div>
   </div>
 
   <script>
-    // ---------------------------------------------------------
-    // VARIABLES Y CONFIGURACIÓN FIJA
-    // ---------------------------------------------------------
     let map, directionsService, directionsRenderer, autocompleteOrigen, autocompleteDestino;
 
-    const TARIFA_KM = 300;       // Precio por km
-    const PRECIO_BAJADA = 500;   // Precio de bajada inicial
+    const TARIFA_KM = 300;
+    const PRECIO_BAJADA = 500;
+    const SCRIPT_URL = "TU_WEB_APP_URL_AQUI"; // reemplazá con tu URL de Apps Script
 
     function initMap() {
       const centro = { lat: -38.9516, lng: -68.0596 };
@@ -76,7 +104,10 @@
       autocompleteDestino = new google.maps.places.Autocomplete(document.getElementById("destino"), { fields: ["formatted_address", "geometry", "name"] });
 
       document.getElementById("btnCalcular").addEventListener("click", calcular);
+      document.getElementById("btnSolicitar").addEventListener("click", enviarMail);
     }
+
+    let ultimoCalculo = null;
 
     function calcular() {
       const origen = document.getElementById("origen").value.trim();
@@ -107,33 +138,51 @@
         const distanciaKm = element.distance.value / 1000;
         const precioTotal = PRECIO_BAJADA + (distanciaKm * TARIFA_KM);
 
-        // Resultado solo con distancia y precio total
-        document.getElementById("resultado").innerHTML = `
-          <div style="
-            background:#f0f8ff;
-            border-radius:10px;
-            padding:12px;
-            box-shadow:0 4px 12px rgba(0,0,0,0.1);
-            display:flex;
-            flex-direction:column;
-            gap:8px;
-          ">
-            <div><strong>Distancia:</strong> ${element.distance.text} (${distanciaKm.toFixed(2)} km)</div>
-            <div style="font-size:1.1em;font-weight:700;text-align:right;">Precio total: $${precioTotal.toFixed(2)}</div>
-          </div>
+        // Mostrar resultado
+        document.getElementById("resultado-box").innerHTML = `
+          <div><strong>Distancia:</strong> ${element.distance.text} (${distanciaKm.toFixed(2)} km)</div>
+          <div style="font-size:1.1em;font-weight:700;text-align:right;">Precio total: $${precioTotal.toFixed(2)}</div>
         `;
 
+        ultimoCalculo = { origen, destino, distancia: distanciaKm.toFixed(2), precioTotal: precioTotal.toFixed(2) };
+
+        // Mostrar botón solicitar
+        const btn = document.getElementById("btnSolicitar");
+        btn.style.display = "block";
+        btn.scrollIntoView({behavior:"smooth"});
+
+        // Mostrar ruta en mapa
         directionsService.route({
           origin: origen,
           destination: destino,
           travelMode: google.maps.TravelMode.DRIVING
         }, (routeResult, routeStatus) => {
-          if (routeStatus === 'OK') {
-            directionsRenderer.setDirections(routeResult);
-          } else {
-            console.warn("DirectionsService:", routeStatus);
-          }
+          if (routeStatus === 'OK') directionsRenderer.setDirections(routeResult);
+          else console.warn("DirectionsService:", routeStatus);
         });
+      });
+    }
+
+    function enviarMail() {
+      if(!ultimoCalculo) { alert("Primero realizá un cálculo."); return; }
+
+      fetch(SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify(ultimoCalculo),
+        headers: { 'Content-Type': 'application/json' }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if(data.status === "ok") {
+          alert("Solicitud enviada correctamente.");
+          document.getElementById("btnSolicitar").style.display = "none";
+        } else {
+          alert("Error al enviar la solicitud: " + data.message);
+        }
+      })
+      .catch(err => {
+        alert("Error al enviar la solicitud: " + err.message);
+        console.error(err);
       });
     }
   </script>
