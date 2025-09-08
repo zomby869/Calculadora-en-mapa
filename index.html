@@ -79,7 +79,16 @@
       <div id="resultado">
         <div id="resultado-box">Ingresá origen y destino y presioná «Calcular».</div>
       </div>
-      <button id="btnSolicitar">Solicitar</button>
+
+      <!-- Formulario POST oculto que se muestra solo después de calcular -->
+      <form id="formSolicitar" method="POST" action="https://script.google.com/macros/s/AKfycbxGyZy-HQsZlcLMOObE2LXTI_VofqxXzL0dDFgb7l2BB2GkLHbExHaMCvgw6WJHeTKW/exec" target="_blank" style="display:none;">
+        <input type="hidden" name="origen" id="form-origen">
+        <input type="hidden" name="destino" id="form-destino">
+        <input type="hidden" name="distancia" id="form-distancia">
+        <input type="hidden" name="precioTotal" id="form-precioTotal">
+        <button type="submit" id="btnSolicitar">Solicitar</button>
+      </form>
+
       <div id="map"></div>
       <small style="display:block;margin-top:12px;color:#666;text-align:center">
         Consejo: usá las sugerencias automáticas al escribir (autocomplete). Si no ves sugerencias o aparece error, mirá la consola del navegador (F12).
@@ -92,7 +101,6 @@
 
     const TARIFA_KM = 500;
     const PRECIO_BAJADA = 1000;
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxGyZy-HQsZlcLMOObE2LXTI_VofqxXzL0dDFgb7l2BB2GkLHbExHaMCvgw6WJHeTKW/exec"; // reemplazá con tu URL de Apps Script
 
     function initMap() {
       const centro = { lat: -38.9516, lng: -68.0596 };
@@ -104,10 +112,7 @@
       autocompleteDestino = new google.maps.places.Autocomplete(document.getElementById("destino"), { fields: ["formatted_address", "geometry", "name"] });
 
       document.getElementById("btnCalcular").addEventListener("click", calcular);
-      document.getElementById("btnSolicitar").addEventListener("click", enviarMail);
     }
-
-    let ultimoCalculo = null;
 
     function calcular() {
       const origen = document.getElementById("origen").value.trim();
@@ -144,12 +149,15 @@
           <div style="font-size:1.1em;font-weight:700;text-align:right;">Precio total: $${precioTotal.toFixed(2)}</div>
         `;
 
-        ultimoCalculo = { origen, destino, distancia: distanciaKm.toFixed(2), precioTotal: precioTotal.toFixed(2) };
+        // Preparar formulario para envío
+        document.getElementById("form-origen").value = origen;
+        document.getElementById("form-destino").value = destino;
+        document.getElementById("form-distancia").value = distanciaKm.toFixed(2);
+        document.getElementById("form-precioTotal").value = precioTotal.toFixed(2);
 
-        // Mostrar botón solicitar
-        const btn = document.getElementById("btnSolicitar");
-        btn.style.display = "block";
-        btn.scrollIntoView({behavior:"smooth"});
+        // Mostrar botón Solicitar
+        document.getElementById("formSolicitar").style.display = "block";
+        document.getElementById("btnSolicitar").scrollIntoView({behavior:"smooth"});
 
         // Mostrar ruta en mapa
         directionsService.route({
@@ -162,29 +170,6 @@
         });
       });
     }
-
-    function enviarMail() {
-      if(!ultimoCalculo) { alert("Primero realizá un cálculo."); return; }
-
-      fetch(SCRIPT_URL, {
-        method: 'POST',
-        body: JSON.stringify(ultimoCalculo),
-        headers: { 'Content-Type': 'application/json' }
-      })
-      .then(res => res.json())
-      .then(data => {
-        if(data.status === "ok") {
-          alert("Solicitud enviada correctamente.");
-          document.getElementById("btnSolicitar").style.display = "none";
-        } else {
-          alert("Error al enviar la solicitud: " + data.message);
-        }
-      })
-      .catch(err => {
-        alert("Error al enviar la solicitud: " + err.message);
-        console.error(err);
-      });
-    }
   </script>
 
   <script async defer
@@ -192,8 +177,3 @@
   </script>
 </body>
 </html>
-
-
-
-
-
